@@ -143,6 +143,9 @@ class VertexSeq(list):
         for elem in self.vertices:
             yield elem
 
+    def __len__(self):
+        return len(self.vertices)
+
 
 class Edge(dict):
     def __init__(self, index, sindex, tindex, sname, tname, **args):
@@ -240,6 +243,9 @@ class EdgeSeq(list):
             
         self.index = len(self.edges)
 
+    def __len__(self):
+        return len(self.edges)
+
 class Graph():
     def __init__(self):
         self.vs = VertexSeq()
@@ -267,6 +273,5 @@ class Graph():
         s = "The count of vertices is %d, and the count of edges is %d" % \
                 (len(self.vs), len(self.es))
         return s
-        #print(s)
 
 
