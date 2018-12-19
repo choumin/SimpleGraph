@@ -262,6 +262,9 @@ class EdgeSeq(list):
     def __len__(self):
         return len(self.edges)
 
+    def get_edge_keys(self):
+        return self.st_to_edge.keys()
+
 class Graph():
     def __init__(self):
         self.vs = VertexSeq()
@@ -348,3 +351,31 @@ class Graph():
 
         return Q
 
+    def degree_weighted(self):
+        _degree = {}
+        for vertex in self.vs:
+            _degree[vertex["name"]] = 0
+            for neighbor in vertex.neighbors():
+                _degree[vertex["name"]] += self.get_weight(vertex["name"], \
+                        neighbor["name"], 1)
+
+        return _degree
+    
+    def modularity_from_zm(self, communities):
+        Q = 0
+        S = 0
+        D = 0
+        m = self.size() * 2
+        vertex_degree = self.degree_weighted()
+        for community in communities:
+            for u, v in combinations(community, 2):
+                u_vertex = self.vs.find(name = u)
+                if u_vertex.has_neighbor(v):
+                    S += self.get_weight(u, v, 1) 
+                D += vertex_degree[u] * vertex_degree[v]
+        Q = 1.0 * (S - D * 1.0 / m) / m
+
+        return Q
+
+    def get_edge_keys(self):
+        return self.es.get_edge_keys()
