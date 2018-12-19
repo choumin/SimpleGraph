@@ -1,3 +1,6 @@
+from itertools import combinations
+from itertools import product
+
 class Vertex(dict):
     def __init__(self, index, **args):
         self.index = index
@@ -20,6 +23,12 @@ class Vertex(dict):
         self._neighbors.append(vertex)
         self.__dict__[neighbor_type].add(vertex)
 
+    def has_neighbor(self, name):
+        _n_name = [vertex["name"] for vertex in self._neighbors]
+        if name in _n_name:
+            return True
+        return False
+        
     def __setitem__(self, key, item):
         self.__dict__[key] = item
 
@@ -95,6 +104,9 @@ class VertexSeq(list):
             vertex.set_attribute(attr, val)
 
     def find(self, name):
+        if name not in self.name_to_vertex:
+            raise(Exception, "vertex not found.")
+
         return self.name_to_vertex[name]
 
     def add_neighbor(self, source, target):
@@ -180,7 +192,11 @@ class EdgeSeq(list):
         self.st_to_edge = {}
 
     def select(self, _source, _target):
-        return [self.st_to_edge['_'.join([_source, _target])]] 
+        edge_key = '_'.join([_source, _target])
+        if edge_key not in self.st_to_edge:
+            raise(Exception, "Edge not found.")
+
+        return [self.st_to_edge[edge_key]] 
 
     def add_edge(self, sindex, tindex, sname, tname, **args):
         attributes = self.get_attributes()
@@ -252,6 +268,9 @@ class Graph():
         self.es = EdgeSeq()
 
     def add_edge(self, source, target, **args):
+        if "weight" not in args:
+            print("Error: A vertex must have a weight!")
+            return
         sindex = self.vs.find(name=source).index
         tindex = self.vs.find(name=target).index
         
@@ -274,4 +293,58 @@ class Graph():
                 (len(self.vs), len(self.es))
         return s
 
+    def size(self):
+        return len(self.es)
+
+    def degree(self):
+        _degree = {}
+        for vertex in self.vs:
+            _degree[vertex["name"]] = vertex.degree()
+    
+        return _degree
+
+    def get_weight(self, u, v, default):
+        try:
+            edges = self.es.select(u, v)
+            return edges[0]["weight"]
+        except:
+            return default
+        
+    def get_weight2(self, u, v, default):
+        try:
+            edges = self.es.select(u, v)
+            return 1
+        except:
+            return default
+
+    def modularity_from_networkx(self, communities):
+        m = self.size()
+        out_degree = self.degree()
+        in_degree = out_degree
+        norm = 1.0 / (2 * m)
+
+        def val(u, v):
+            w = self.get_weight2(u, v, 0)
+            if u == v:
+                w *= 2
+            return w - in_degree[u] * out_degree[v] * norm
+        Q = sum(val(u, v) for c in communities for u, v in product(c, repeat = 2))
+
+        return Q * norm
+
+    def modularity_from_qyj(self, communities):
+        Q = 0
+        S = 0
+        D = 0
+        m = self.size() * 2
+        vertex_degree = self.degree()
+        for community in communities:
+            for u, v in combinations(community, 2):
+                u_vertex = self.vs.find(name = u)
+                if u_vertex.has_neighbor(v):
+                    S += 1
+                D += vertex_degree[u] * vertex_degree[v]
+        Q = 1.0 * (S - D * 1.0 / m) / m
+
+        return Q
 
